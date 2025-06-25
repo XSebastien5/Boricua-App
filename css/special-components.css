@@ -1,0 +1,532 @@
+/* Special Components CSS - Boricua Dance Studio */
+
+/* QR Scanner Styles */
+.qr-scanner-modal .modal-body {
+  padding: 0;
+  background: #000;
+}
+
+.qr-scanner-container {
+  position: relative;
+  width: 100%;
+  height: 400px;
+  overflow: hidden;
+}
+
+.qr-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.qr-scanner-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.qr-scanner-frame {
+  position: relative;
+  width: 250px;
+  height: 250px;
+  border: 2px solid transparent;
+}
+
+.qr-scanner-corner {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border: 3px solid var(--color-primary);
+}
+
+.qr-scanner-corner.tl {
+  top: 0;
+  left: 0;
+  border-right: none;
+  border-bottom: none;
+}
+
+.qr-scanner-corner.tr {
+  top: 0;
+  right: 0;
+  border-left: none;
+  border-bottom: none;
+}
+
+.qr-scanner-corner.bl {
+  bottom: 0;
+  left: 0;
+  border-right: none;
+  border-top: none;
+}
+
+.qr-scanner-corner.br {
+  bottom: 0;
+  right: 0;
+  border-left: none;
+  border-top: none;
+}
+
+.qr-scan-line {
+  position: absolute;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, 
+    transparent,
+    var(--color-primary),
+    transparent
+  );
+  animation: scan 2s linear infinite;
+}
+
+.qr-scanner-instruction {
+  margin-top: var(--spacing-lg);
+  color: white;
+  text-align: center;
+  font-size: var(--font-lg);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+/* Gamification Celebrations */
+.badge-celebration,
+.level-up-celebration {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-notification);
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease-out;
+}
+
+.badge-celebration.show,
+.level-up-celebration.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+.badge-celebration.hide,
+.level-up-celebration.hide {
+  opacity: 0;
+  transform: scale(0.8);
+}
+
+.badge-celebration-content,
+.level-up-content {
+  text-align: center;
+  animation: bounceIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.badge-celebration .gamification-badge {
+  width: 120px;
+  height: 120px;
+  font-size: 60px;
+  margin: 0 auto var(--spacing-xl);
+}
+
+.badge-celebration-title,
+.level-up-title {
+  font-size: var(--font-4xl);
+  font-weight: var(--font-bold);
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-md);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.badge-celebration-name {
+  font-size: var(--font-2xl);
+  color: var(--color-primary);
+  margin-bottom: var(--spacing-md);
+}
+
+.badge-celebration-description {
+  font-size: var(--font-lg);
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-lg);
+}
+
+.badge-celebration-points {
+  font-size: var(--font-3xl);
+  font-weight: var(--font-bold);
+  color: var(--status-active);
+  animation: floatUp 2s ease-out forwards;
+}
+
+.level-up-badge {
+  width: 150px;
+  height: 150px;
+  margin: 0 auto var(--spacing-xl);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  animation: levelUpPulse 1s ease-out;
+}
+
+.level-number {
+  font-size: 72px;
+  font-weight: var(--font-bold);
+  color: white;
+}
+
+.level-name {
+  font-size: var(--font-3xl);
+  color: var(--text-primary);
+  margin-top: var(--spacing-lg);
+}
+
+/* Login Page */
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+  padding: var(--spacing-lg);
+}
+
+.login-container {
+  width: 100%;
+  max-width: 400px;
+}
+
+.login-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  box-shadow: var(--shadow-xl);
+  padding: var(--spacing-2xl);
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: var(--spacing-2xl);
+}
+
+.login-logo {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto var(--spacing-lg);
+  border-radius: var(--radius-lg);
+}
+
+.login-title {
+  font-size: var(--font-3xl);
+  font-weight: var(--font-bold);
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-sm);
+}
+
+.login-subtitle {
+  color: var(--text-secondary);
+  font-size: var(--font-lg);
+}
+
+.login-form {
+  margin-bottom: var(--spacing-lg);
+}
+
+.login-links {
+  display: flex;
+  justify-content: space-between;
+  margin-top: var(--spacing-lg);
+  font-size: var(--font-sm);
+}
+
+.demo-users {
+  border-top: 1px solid var(--border-primary);
+  padding-top: var(--spacing-lg);
+  margin-top: var(--spacing-lg);
+}
+
+.demo-buttons {
+  display: flex;
+  gap: var(--spacing-sm);
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* Dashboard Stats */
+.points-display {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-md);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+}
+
+.points-value {
+  font-size: var(--font-3xl);
+  font-weight: var(--font-bold);
+  color: var(--color-primary);
+}
+
+.badges-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+  gap: var(--spacing-md);
+}
+
+/* Progress Bar */
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background: var(--bg-hover);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  position: relative;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-primary-light));
+  border-radius: var(--radius-full);
+  transition: width 0.3s ease-out;
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+  animation: shimmer 2s infinite;
+}
+
+/* Calendar Components */
+.calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-lg);
+}
+
+.calendar-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.calendar-title {
+  font-size: var(--font-xl);
+  font-weight: var(--font-semibold);
+  color: var(--text-primary);
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1px;
+  background: var(--border-primary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.calendar-day-header {
+  background: var(--bg-secondary);
+  padding: var(--spacing-sm);
+  text-align: center;
+  font-weight: var(--font-semibold);
+  font-size: var(--font-sm);
+  color: var(--text-secondary);
+}
+
+.calendar-day {
+  background: var(--bg-card);
+  min-height: 100px;
+  padding: var(--spacing-sm);
+  position: relative;
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.calendar-day:hover {
+  background: var(--bg-hover);
+}
+
+.calendar-day.other-month {
+  opacity: 0.5;
+}
+
+.calendar-day.today {
+  background: var(--bg-secondary);
+}
+
+.calendar-day-number {
+  font-size: var(--font-sm);
+  font-weight: var(--font-medium);
+  margin-bottom: var(--spacing-xs);
+}
+
+.calendar-events {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.calendar-event {
+  padding: 2px 4px;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-xs);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: white;
+}
+
+/* Attendance Grid */
+.attendance-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: var(--spacing-md);
+}
+
+.attendance-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-md);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  transition: all var(--transition-fast);
+}
+
+.attendance-card:hover {
+  border-color: var(--color-primary);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.attendance-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-full);
+  background: var(--bg-hover);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: var(--font-semibold);
+  flex-shrink: 0;
+}
+
+.attendance-info {
+  flex: 1;
+}
+
+.attendance-name {
+  font-weight: var(--font-medium);
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-xs);
+}
+
+.attendance-time {
+  font-size: var(--font-sm);
+  color: var(--text-secondary);
+}
+
+.attendance-method {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-full);
+  font-size: var(--font-xs);
+  color: var(--text-secondary);
+}
+
+/* Course Mapping */
+.course-mapping-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.figure-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+}
+
+.figure-item:hover {
+  border-color: var(--color-primary);
+}
+
+.figure-checkbox {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.figure-name {
+  flex: 1;
+  font-weight: var(--font-medium);
+  color: var(--text-primary);
+}
+
+.figure-item.completed {
+  opacity: 0.7;
+}
+
+.figure-item.completed .figure-name {
+  text-decoration: line-through;
+  color: var(--text-secondary);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .calendar-grid {
+    font-size: var(--font-sm);
+  }
+  
+  .calendar-day {
+    min-height: 80px;
+    padding: var(--spacing-xs);
+  }
+  
+  .badge-celebration-title,
+  .level-up-title {
+    font-size: var(--font-3xl);
+  }
+  
+  .demo-buttons {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .demo-buttons .btn {
+    width: 100%;
+  }
+}
