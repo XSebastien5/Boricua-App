@@ -1,7 +1,9 @@
 // Backup Service - Boricua Dance Studio
 
 class BackupService {
-  constructor() {
+  constructor(services) {
+    this.toast = services.toast;
+    this.modal = services.modal;
     this.cloudProvider = null;
     this.autoBackupInterval = null;
     this.init();
@@ -40,7 +42,7 @@ class BackupService {
         await this.uploadToCloud(backup);
       }
       
-      Toast.show('Backup creato con successo', 'success');
+      this.toast.show('Backup creato con successo', 'success');
       
       return {
         success: true,
@@ -50,7 +52,7 @@ class BackupService {
       
     } catch (error) {
       console.error('Error creating backup:', error);
-      Toast.show('Errore nella creazione del backup', 'error');
+      this.toast.show('Errore nella creazione del backup', 'error');
       return {
         success: false,
         error: error.message
@@ -78,11 +80,11 @@ class BackupService {
           throw new Error('Formato non supportato');
       }
       
-      Toast.show('Backup esportato con successo', 'success');
+      this.toast.show('Backup esportato con successo', 'success');
       
     } catch (error) {
       console.error('Error exporting backup:', error);
-      Toast.show('Errore nell\'esportazione del backup', 'error');
+      this.toast.show('Errore nell\'esportazione del backup', 'error');
     }
   }
   
@@ -95,7 +97,7 @@ class BackupService {
         const success = Storage.importJSON(content);
         
         if (success) {
-          Toast.show('Backup importato con successo', 'success');
+          this.toast.show('Backup importato con successo', 'success');
           
           // Reload app
           setTimeout(() => {
@@ -110,14 +112,14 @@ class BackupService {
       
     } catch (error) {
       console.error('Error importing backup:', error);
-      Toast.show('Errore nell\'importazione del backup: ' + error.message, 'error');
+      this.toast.show('Errore nell\'importazione del backup: ' + error.message, 'error');
     }
   }
   
   // Restore from backup
   async restoreBackup(backupId) {
     try {
-      const confirmed = await Modal.confirm({
+      const confirmed = await this.modal.confirm({
         title: 'Conferma Ripristino',
         message: 'Questa operazione sostituirà tutti i dati attuali. Vuoi continuare?',
         confirmText: 'Ripristina',
@@ -130,7 +132,7 @@ class BackupService {
       const success = Storage.restoreFromBackup(backupId);
       
       if (success) {
-        Toast.show('Backup ripristinato con successo', 'success');
+        this.toast.show('Backup ripristinato con successo', 'success');
         
         // Reload app
         setTimeout(() => {
@@ -142,7 +144,7 @@ class BackupService {
       
     } catch (error) {
       console.error('Error restoring backup:', error);
-      Toast.show('Errore nel ripristino del backup', 'error');
+      this.toast.show('Errore nel ripristino del backup', 'error');
     }
   }
   
@@ -162,11 +164,11 @@ class BackupService {
   deleteBackup(backupKey) {
     try {
       localStorage.removeItem(APP_CONFIG.storagePrefix + backupKey);
-      Toast.show('Backup eliminato', 'success');
+      this.toast.show('Backup eliminato', 'success');
       return true;
     } catch (error) {
       console.error('Error deleting backup:', error);
-      Toast.show('Errore nell\'eliminazione del backup', 'error');
+      this.toast.show('Errore nell\'eliminazione del backup', 'error');
       return false;
     }
   }
@@ -220,7 +222,7 @@ class BackupService {
       setTimeout(() => {
         if (provider === 'google' || provider === 'dropbox') {
           this.cloudProvider = provider;
-          Toast.show(`Connesso a ${provider}`, 'success');
+          this.toast.show(`Connesso a ${provider}`, 'success');
           resolve(true);
         } else {
           reject(new Error('Provider non supportato'));
@@ -266,16 +268,16 @@ class BackupService {
       const csv = Storage.exportCSV(collectionKey);
       
       if (!csv) {
-        Toast.show('Nessun dato da esportare', 'warning');
+        this.toast.show('Nessun dato da esportare', 'warning');
         return;
       }
       
       this.downloadFile(csv, `${filename}.csv`, 'text/csv');
-      Toast.show('CSV esportato con successo', 'success');
+      this.toast.show('CSV esportato con successo', 'success');
       
     } catch (error) {
       console.error('Error exporting CSV:', error);
-      Toast.show('Errore nell\'esportazione CSV', 'error');
+      this.toast.show('Errore nell\'esportazione CSV', 'error');
     }
   }
   
@@ -306,7 +308,7 @@ class BackupService {
       const success = Storage.importCSV(content, collectionKey);
       
       if (success) {
-        Toast.show('CSV importato con successo', 'success');
+        this.toast.show('CSV importato con successo', 'success');
         
         // Reload current page
         if (window.app?.router) {
@@ -316,7 +318,7 @@ class BackupService {
       
     } catch (error) {
       console.error('Error importing CSV:', error);
-      Toast.show('Errore nell\'importazione CSV: ' + error.message, 'error');
+      this.toast.show('Errore nell\'importazione CSV: ' + error.message, 'error');
     }
   }
   
@@ -369,7 +371,7 @@ class BackupService {
   async exportPDF(options = {}) {
     // This would require a PDF library like jsPDF
     // Mock implementation for now
-    Toast.show('Funzionalità PDF in sviluppo', 'info');
+    this.toast.show('Funzionalità PDF in sviluppo', 'info');
   }
   
   // Data validation before backup
@@ -415,5 +417,4 @@ class BackupService {
   }
 }
 
-// Create global instance
-window.BackupService = new BackupService();
+// No global instance

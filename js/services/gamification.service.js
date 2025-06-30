@@ -1,7 +1,8 @@
 // Gamification Service - Boricua Dance Studio
 
 class GamificationService {
-  constructor() {
+  constructor(services) {
+    this.notificationService = services.notification;
     this.badges = [];
     this.init();
   }
@@ -327,7 +328,7 @@ class GamificationService {
   
   // Create badge notification
   createBadgeNotification(studentId, badge) {
-    NotificationService.createInAppNotification({
+    this.notificationService.createInAppNotification({
       type: NOTIFICATION_TYPES.SUCCESS,
       title: 'Badge Guadagnato!',
       message: `Hai guadagnato il badge "${badge.name}" - ${badge.description}`,
@@ -338,7 +339,7 @@ class GamificationService {
   
   // Create level up notification
   createLevelUpNotification(studentId, level) {
-    NotificationService.createInAppNotification({
+    this.notificationService.createInAppNotification({
       type: NOTIFICATION_TYPES.SUCCESS,
       title: 'Level Up!',
       message: `Sei salito al livello ${level.level} - ${level.name}!`,
@@ -528,5 +529,4 @@ class GamificationService {
   }
 }
 
-// Create global instance
-window.GamificationService = new GamificationService();
+// No global instance

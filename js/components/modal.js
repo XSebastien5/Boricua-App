@@ -622,5 +622,4 @@ class ModalComponent {
   }
 }
 
-// Create global instance
-window.Modal = new ModalComponent();
+// No global instance

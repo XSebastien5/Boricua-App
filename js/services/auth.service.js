@@ -392,5 +392,4 @@ class AuthService {
   }
 }
 
-// Create global instance
-window.AuthService = AuthService;
+// No global instance

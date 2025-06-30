@@ -6,6 +6,9 @@ class BoricuaApp {
     this.router = null;
     this.initialized = false;
     
+    // Service container
+    this.services = {};
+
     // Bind methods
     this.init = this.init.bind(this);
     this.checkAuth = this.checkAuth.bind(this);
@@ -16,6 +19,9 @@ class BoricuaApp {
     try {
       // Show loading
       this.showLoading(true);
+
+      // Initialize services
+      this.initializeServices();
       
       // Initialize demo mode if needed
       this.checkDemoMode();
@@ -24,7 +30,7 @@ class BoricuaApp {
       const isAuthenticated = await this.checkAuth();
       
       // Initialize router
-      this.router = new Router();
+      this.router = new Router(this.services);
       
       // Setup event listeners
       this.setupEventListeners();
@@ -47,10 +53,24 @@ class BoricuaApp {
       
     } catch (error) {
       console.error('Error initializing app:', error);
-      this.showError('Errore nell\'inizializzazione dell\'applicazione');
+      this.services.toast.show('Errore nell\'inizializzazione dell\'applicazione: ' + error.message, 'error');
     } finally {
       this.showLoading(false);
     }
+  }
+
+  initializeServices() {
+    // Order is important here
+    this.services.toast = new ToastComponent();
+    this.services.modal = new ModalComponent();
+    this.services.sidebar = new SidebarComponent(this);
+    this.services.auth = new AuthService();
+    this.services.notification = new NotificationService(this.services);
+    this.services.gamification = new GamificationService(this.services);
+    this.services.calendar = new CalendarService(this.services);
+    this.services.backup = new BackupService(this.services);
+    this.services.demo = new DemoService(this.services);
+    this.services.qr = new QRService(this.services);
   }
 
   checkDemoMode() {
@@ -68,10 +88,9 @@ class BoricuaApp {
     Storage.set(STORAGE_KEYS.DEMO_MODE, true);
     
     // Initialize demo data
-    const demoService = new DemoService();
-    demoService.initializeDemoData();
+    this.services.demo.initializeDemoData();
     
-    Toast.show('Modalità demo attivata con dati di esempio', 'info');
+    this.services.toast.show('Modalità demo attivata con dati di esempio', 'info');
   }
 
   async checkAuth() {
@@ -96,7 +115,7 @@ class BoricuaApp {
     
     // Load menu for user role
     if (this.currentUser) {
-      Sidebar.loadMenu(this.currentUser.role);
+      this.services.sidebar.loadMenu(this.currentUser.role);
     }
     
     // Update header with user info
@@ -134,7 +153,7 @@ class BoricuaApp {
     const menuToggle = document.getElementById('menu-toggle');
     if (menuToggle) {
       menuToggle.addEventListener('click', () => {
-        Sidebar.toggle();
+        this.services.sidebar.toggle();
       });
     }
     
@@ -177,12 +196,12 @@ class BoricuaApp {
     
     // Handle online/offline
     window.addEventListener('online', () => {
-      Toast.show('Connessione ripristinata', 'success');
+      this.services.toast.show('Connessione ripristinata', 'success');
       this.syncData();
     });
     
     window.addEventListener('offline', () => {
-      Toast.show('Modalità offline - I dati verranno sincronizzati quando tornerai online', 'warning');
+      this.services.toast.show('Modalità offline - I dati verranno sincronizzati quando tornerai online', 'warning');
     });
   }
 
@@ -263,7 +282,7 @@ class BoricuaApp {
     const notifications = Storage.get(STORAGE_KEYS.NOTIFICATIONS) || [];
     
     // Create notifications modal
-    const modal = Modal.create({
+    const modal = this.services.modal.create({
       title: 'Notifiche',
       content: this.renderNotifications(notifications),
       actions: [
@@ -272,13 +291,13 @@ class BoricuaApp {
           class: 'btn-outline',
           onClick: () => {
             this.markAllNotificationsAsRead();
-            Modal.close();
+            this.services.modal.close();
           }
         },
         {
           text: 'Chiudi',
           class: 'btn-primary',
-          onClick: () => Modal.close()
+          onClick: () => this.services.modal.close()
         }
       ]
     });
@@ -368,7 +387,7 @@ class BoricuaApp {
   }
 
   async handleLogout() {
-    const confirmed = await Modal.confirm({
+    const confirmed = await this.services.modal.confirm({
       title: 'Conferma Logout',
       message: 'Sei sicuro di voler uscire?',
       confirmText: 'Esci',
@@ -386,7 +405,7 @@ class BoricuaApp {
       // Navigate to login
       this.router.navigate(ROUTES.LOGIN);
       
-      Toast.show('Logout effettuato con successo', 'success');
+      this.services.toast.show('Logout effettuato con successo', 'success');
     }
   }
 
@@ -396,7 +415,7 @@ class BoricuaApp {
     
     // In a real app, this would sync local changes with the server
     setTimeout(() => {
-      Toast.show('Dati sincronizzati', 'success');
+      this.services.toast.show('Dati sincronizzati', 'success');
     }, 2000);
   }
 
@@ -408,12 +427,27 @@ class BoricuaApp {
   }
 
   showError(message) {
-    Toast.show(message, 'error');
+    this.services.toast.show(message, 'error');
   }
 }
 
 // Initialize app when DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
-  window.app = new BoricuaApp();
-  window.app.init();
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    window.app = new BoricuaApp();
+    await window.app.init();
+  } catch (error) {
+    console.error("Failed to initialize Boricua App:", error);
+    // Optionally, display a user-friendly error message on the page
+    const body = document.querySelector('body');
+    if (body) {
+      body.innerHTML = `
+        <div style="text-align: center; padding: 50px; font-family: sans-serif;">
+          <h1>Oops! Qualcosa è andato storto.</h1>
+          <p>Non è stato possibile caricare l'applicazione. Riprova più tardi.</p>
+          <p><i>Dettagli errore: ${error.message}</i></p>
+        </div>
+      `;
+    }
+  }
 });

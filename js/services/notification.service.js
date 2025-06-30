@@ -1,7 +1,8 @@
 // Notification Service - Boricua Dance Studio
 
 class NotificationService {
-  constructor() {
+  constructor(services) {
+    this.toast = services.toast;
     this.permission = 'default';
     this.swRegistration = null;
     this.init();
@@ -34,7 +35,7 @@ class NotificationService {
     }
     
     if (this.permission === 'denied') {
-      Toast.show('Le notifiche sono state bloccate. Abilitale nelle impostazioni del browser.', 'warning');
+      this.toast.show('Le notifiche sono state bloccate. Abilitale nelle impostazioni del browser.', 'warning');
       return false;
     }
     
@@ -43,11 +44,11 @@ class NotificationService {
       this.permission = permission;
       
       if (permission === 'granted') {
-        Toast.show('Notifiche abilitate!', 'success');
+        this.toast.show('Notifiche abilitate!', 'success');
         this.subscribeToNotifications();
         return true;
       } else {
-        Toast.show('Notifiche non abilitate', 'info');
+        this.toast.show('Notifiche non abilitate', 'info');
         return false;
       }
     } catch (error) {
@@ -387,5 +388,4 @@ class NotificationService {
   }
 }
 
-// Create global instance
-window.NotificationService = new NotificationService();
+// No global instance

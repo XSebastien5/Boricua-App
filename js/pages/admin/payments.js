@@ -2,151 +2,85 @@
 
 class AdminPaymentsPage {
   constructor() {
+    this.services = null;
     this.payments = [];
     this.students = [];
-    this.subscriptions = [];
-    this.currentFilter = 'all';
-    this.dateRange = 'month';
-    this.searchTerm = '';
+  }
+
+  init(services) {
+    this.services = services;
+    this.addEventListeners();
+  }
+
+  addEventListeners() {
+    const pageContent = document.getElementById('page-content');
+    pageContent.addEventListener('click', (event) => {
+      const action = event.target.closest('[data-action]');
+      if (!action) return;
+
+      const actionName = action.dataset.action;
+      const actionId = action.dataset.id;
+
+      switch (actionName) {
+        case 'add-payment':
+          this.addPayment();
+          break;
+        case 'edit-payment':
+          this.editPayment(actionId);
+          break;
+        case 'delete-payment':
+          this.deletePayment(actionId);
+          break;
+        case 'view-receipt':
+          this.viewReceipt(actionId);
+          break;
+      }
+    });
   }
 
   async render() {
     this.payments = Storage.get(STORAGE_KEYS.PAYMENTS) || [];
     this.students = Storage.get(STORAGE_KEYS.STUDENTS) || [];
-    this.subscriptions = Storage.get(STORAGE_KEYS.SUBSCRIPTIONS) || [];
-    
     const stats = this.calculateStats();
-    
+
     return `
       <div class="payments-page">
         <!-- Header -->
         <div class="page-header">
           <div class="page-header-content">
             <h1 class="page-title">Gestione Pagamenti</h1>
-            <p class="page-subtitle">Monitora entrate e pagamenti</p>
+            <p class="page-subtitle">Registra e monitora le transazioni finanziarie</p>
           </div>
           <div class="page-header-actions">
-            <button class="btn btn-primary" onclick="adminPaymentsPage.addManualPayment()">
-              <span class="material-icons">add</span>
-              Registra Pagamento
-            </button>
-            <button class="btn btn-outline" onclick="adminPaymentsPage.exportPayments()">
-              <span class="material-icons">download</span>
-              Esporta
+            <button class="btn btn-primary" data-action="add-payment">
+              <span class="material-icons">add_card</span>
+              Aggiungi Pagamento
             </button>
           </div>
         </div>
 
-        <!-- Stats Cards -->
+        <!-- Stats -->
         <div class="payment-stats">
           <div class="stat-card">
-            <div class="stat-icon success">
-              <span class="material-icons">euro</span>
-            </div>
+            <div class="stat-icon primary"><span class="material-icons">euro_symbol</span></div>
             <div class="stat-content">
-              <div class="stat-label">Entrate Questo Mese</div>
-              <div class="stat-value">${NumberHelpers.formatCurrency(stats.monthRevenue)}</div>
-              <div class="stat-change ${stats.monthChange >= 0 ? 'positive' : 'negative'}">
-                <span class="material-icons">${stats.monthChange >= 0 ? 'trending_up' : 'trending_down'}</span>
-                ${Math.abs(stats.monthChange).toFixed(1)}% vs mese scorso
-              </div>
+              <div class="stat-label">Incasso Totale (Mese)</div>
+              <div class="stat-value">€ ${stats.monthlyTotal.toFixed(2)}</div>
             </div>
           </div>
-          
           <div class="stat-card">
-            <div class="stat-icon primary">
-              <span class="material-icons">calendar_today</span>
-            </div>
+            <div class="stat-icon success"><span class="material-icons">receipt_long</span></div>
             <div class="stat-content">
-              <div class="stat-label">Entrate Oggi</div>
-              <div class="stat-value">${NumberHelpers.formatCurrency(stats.todayRevenue)}</div>
-              <div class="stat-details">${stats.todayCount} pagamenti</div>
+              <div class="stat-label">Transazioni (Mese)</div>
+              <div class="stat-value">${stats.monthlyCount}</div>
             </div>
           </div>
-          
           <div class="stat-card">
-            <div class="stat-icon warning">
-              <span class="material-icons">pending</span>
-            </div>
+            <div class="stat-icon warning"><span class="material-icons">pending</span></div>
             <div class="stat-content">
-              <div class="stat-label">In Sospeso</div>
-              <div class="stat-value">${NumberHelpers.formatCurrency(stats.pendingAmount)}</div>
-              <div class="stat-details">${stats.pendingCount} pagamenti</div>
+              <div class="stat-label">Pagamenti in Sospeso</div>
+              <div class="stat-value">${stats.pending}</div>
             </div>
-          </div>
-          
-          <div class="stat-card">
-            <div class="stat-icon secondary">
-              <span class="material-icons">groups</span>
-            </div>
-            <div class="stat-content">
-              <div class="stat-label">Abbonamenti Attivi</div>
-              <div class="stat-value">${stats.activeSubscriptions}</div>
-              <div class="stat-details">su ${this.students.length} studenti</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Revenue Chart -->
-        <div class="card mt-3">
-          <div class="card-header">
-            <h3 class="card-title">Andamento Entrate</h3>
-            <div class="chart-controls">
-              <button class="chart-btn ${this.dateRange === 'week' ? 'active' : ''}" 
-                      onclick="adminPaymentsPage.changeDateRange('week')">
-                Settimana
-              </button>
-              <button class="chart-btn ${this.dateRange === 'month' ? 'active' : ''}" 
-                      onclick="adminPaymentsPage.changeDateRange('month')">
-                Mese
-              </button>
-              <button class="chart-btn ${this.dateRange === 'year' ? 'active' : ''}" 
-                      onclick="adminPaymentsPage.changeDateRange('year')">
-                Anno
-              </button>
-            </div>
-          </div>
-          <div class="card-body">
-            <div id="revenue-chart" class="chart-container">
-              ${this.renderRevenueChart()}
-            </div>
-          </div>
-        </div>
-
-        <!-- Filters -->
-        <div class="filters-bar mt-3">
-          <div class="search-box">
-            <span class="material-icons">search</span>
-            <input type="text" 
-                   placeholder="Cerca per studente, importo o descrizione..." 
-                   class="search-input"
-                   value="${this.searchTerm}"
-                   onkeyup="adminPaymentsPage.handleSearch(event)">
-          </div>
-          
-          <div class="filter-buttons">
-            <button class="filter-btn ${this.currentFilter === 'all' ? 'active' : ''}" 
-                    onclick="adminPaymentsPage.filterPayments('all')">
-              Tutti
-            </button>
-            <button class="filter-btn ${this.currentFilter === 'completed' ? 'active' : ''}" 
-                    onclick="adminPaymentsPage.filterPayments('completed')">
-              Completati
-            </button>
-            <button class="filter-btn ${this.currentFilter === 'pending' ? 'active' : ''}" 
-                    onclick="adminPaymentsPage.filterPayments('pending')">
-              In Sospeso
-            </button>
-            <button class="filter-btn ${this.currentFilter === 'failed' ? 'active' : ''}" 
-                    onclick="adminPaymentsPage.filterPayments('failed')">
-              Falliti
-            </button>
-          </div>
-          
-          <div class="date-filter">
-            <input type="date" id="filter-start-date" onchange="adminPaymentsPage.applyDateFilter()">
-            <span>-</span>
-            <input type="date" id="filter-end-date" onchange="adminPaymentsPage.applyDateFilter()">
           </div>
         </div>
 
@@ -155,675 +89,200 @@ class AdminPaymentsPage {
           <table class="table">
             <thead>
               <tr>
-                <th>Data</th>
-                <th>Studente</th>
-                <th>Tipo</th>
-                <th>Descrizione</th>
-                <th>Metodo</th>
+                <th>Allievo</th>
                 <th>Importo</th>
+                <th>Descrizione</th>
+                <th>Data</th>
                 <th>Stato</th>
                 <th>Azioni</th>
               </tr>
             </thead>
-            <tbody>
-              ${this.renderPaymentsTable()}
+            <tbody id="payments-table-body">
+              ${this.renderTableBody()}
             </tbody>
           </table>
         </div>
-
-        <!-- Summary -->
-        <div class="payments-summary mt-3">
-          <div class="summary-item">
-            <span>Totale Visualizzato:</span>
-            <strong>${NumberHelpers.formatCurrency(this.getFilteredTotal())}</strong>
-          </div>
-          <div class="summary-item">
-            <span>Pagamenti:</span>
-            <strong>${this.getFilteredPayments().length}</strong>
-          </div>
-        </div>
       </div>
     `;
   }
 
-  renderRevenueChart() {
-    const data = this.getChartData();
-    const maxValue = Math.max(...data.map(d => d.value));
-    const chartHeight = 200;
-    
+  renderTableBody() {
+    if (this.payments.length === 0) {
+      return `<tr><td colspan="6" class="text-center text-secondary">Nessun pagamento registrato.</td></tr>`;
+    }
+    // Sort by date descending
+    const sortedPayments = [...this.payments].sort((a, b) => new Date(b.date) - new Date(a.date));
+    return sortedPayments.map(payment => this.renderPaymentRow(payment)).join('');
+  }
+
+  renderPaymentRow(payment) {
+    const student = this.students.find(s => s.id === payment.studentId);
     return `
-      <div class="revenue-chart">
-        <div class="chart-bars">
-          ${data.map(item => {
-            const height = (item.value / maxValue) * chartHeight;
-            return `
-              <div class="chart-bar-wrapper">
-                <div class="chart-bar" 
-                     style="height: ${height}px"
-                     title="${NumberHelpers.formatCurrency(item.value)}">
-                  <span class="bar-value">${this.formatChartValue(item.value)}</span>
-                </div>
-                <span class="bar-label">${item.label}</span>
-              </div>
-            `;
-          }).join('')}
-        </div>
-      </div>
+      <tr>
+        <td>
+          <div class="user-cell">
+            <div class="avatar">${student ? StringHelpers.getInitials(student.firstName + ' ' + student.lastName) : '?'}</div>
+            <div>
+              <div class="font-medium">${student ? `${student.firstName} ${student.lastName}` : 'Allievo non trovato'}</div>
+              <div class="text-sm text-secondary">ID: ${payment.studentId}</div>
+            </div>
+          </div>
+        </td>
+        <td class="font-medium">€ ${payment.amount.toFixed(2)}</td>
+        <td>${payment.description}</td>
+        <td>${DateHelpers.formatDate(payment.date)}</td>
+        <td>
+          <span class="status-indicator status-${payment.status}">
+            ${this.getStatusLabel(payment.status)}
+          </span>
+        </td>
+        <td>
+          <div class="action-buttons">
+            <button class="icon-btn" data-action="view-receipt" data-id="${payment.id}" title="Vedi Ricevuta">
+              <span class="material-icons">receipt</span>
+            </button>
+            <button class="icon-btn" data-action="edit-payment" data-id="${payment.id}" title="Modifica">
+              <span class="material-icons">edit</span>
+            </button>
+            <button class="icon-btn text-danger" data-action="delete-payment" data-id="${payment.id}" title="Elimina">
+              <span class="material-icons">delete</span>
+            </button>
+          </div>
+        </td>
+      </tr>
     `;
-  }
-
-  renderPaymentsTable() {
-    const payments = this.getFilteredPayments();
-    
-    if (payments.length === 0) {
-      return '<tr><td colspan="8" class="text-center text-secondary">Nessun pagamento trovato</td></tr>';
-    }
-    
-    return payments.map(payment => {
-      const student = this.students.find(s => s.id === payment.studentId);
-      
-      return `
-        <tr>
-          <td>
-            <div class="date-cell">
-              <div>${DateHelpers.formatDate(payment.date)}</div>
-              <div class="text-sm text-secondary">${DateHelpers.formatDate(payment.date, 'time')}</div>
-            </div>
-          </td>
-          <td>
-            ${student ? `
-              <div class="user-cell">
-                <div class="avatar avatar-sm">
-                  ${StringHelpers.getInitials(student.firstName + ' ' + student.lastName)}
-                </div>
-                <div>
-                  <div class="font-medium">${student.firstName} ${student.lastName}</div>
-                  <div class="text-sm text-secondary">${student.email}</div>
-                </div>
-              </div>
-            ` : '<span class="text-secondary">Studente non trovato</span>'}
-          </td>
-          <td>
-            <span class="payment-type-badge ${payment.type}">
-              ${this.getPaymentTypeLabel(payment.type)}
-            </span>
-          </td>
-          <td>${payment.description || '-'}</td>
-          <td>
-            <span class="payment-method">
-              <span class="material-icons">${this.getPaymentMethodIcon(payment.method)}</span>
-              ${this.getPaymentMethodLabel(payment.method)}
-            </span>
-          </td>
-          <td class="font-medium">${NumberHelpers.formatCurrency(payment.amount)}</td>
-          <td>
-            <span class="status-indicator status-${payment.status}">
-              ${this.getStatusLabel(payment.status)}
-            </span>
-          </td>
-          <td>
-            <div class="action-buttons">
-              <button class="icon-btn" onclick="adminPaymentsPage.viewPayment('${payment.id}')" title="Dettagli">
-                <span class="material-icons">visibility</span>
-              </button>
-              ${payment.invoice ? `
-                <button class="icon-btn" onclick="adminPaymentsPage.downloadInvoice('${payment.invoice}')" title="Scarica Fattura">
-                  <span class="material-icons">receipt</span>
-                </button>
-              ` : ''}
-              ${payment.status === PAYMENT_STATUS.PENDING ? `
-                <button class="icon-btn text-success" onclick="adminPaymentsPage.confirmPayment('${payment.id}')" title="Conferma">
-                  <span class="material-icons">check_circle</span>
-                </button>
-                <button class="icon-btn text-danger" onclick="adminPaymentsPage.cancelPayment('${payment.id}')" title="Annulla">
-                  <span class="material-icons">cancel</span>
-                </button>
-              ` : ''}
-            </div>
-          </td>
-        </tr>
-      `;
-    }).join('');
-  }
-
-  // Stats calculations
-
-  calculateStats() {
-    const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    
-    // This month revenue
-    const monthRevenue = this.payments
-      .filter(p => 
-        p.status === PAYMENT_STATUS.COMPLETED &&
-        new Date(p.date) >= startOfMonth
-      )
-      .reduce((sum, p) => sum + p.amount, 0);
-    
-    // Last month revenue
-    const lastMonthRevenue = this.payments
-      .filter(p => 
-        p.status === PAYMENT_STATUS.COMPLETED &&
-        new Date(p.date) >= startOfLastMonth &&
-        new Date(p.date) <= endOfLastMonth
-      )
-      .reduce((sum, p) => sum + p.amount, 0);
-    
-    // Today revenue
-    const todayPayments = this.payments.filter(p => 
-      p.status === PAYMENT_STATUS.COMPLETED &&
-      new Date(p.date).toDateString() === today.toDateString()
-    );
-    
-    // Pending
-    const pendingPayments = this.payments.filter(p => p.status === PAYMENT_STATUS.PENDING);
-    
-    // Active subscriptions
-    const activeSubscriptions = this.subscriptions.filter(s => 
-      s.status === 'active' &&
-      new Date(s.endDate) > now
-    ).length;
-    
-    return {
-      monthRevenue,
-      monthChange: lastMonthRevenue > 0 ? ((monthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100 : 0,
-      todayRevenue: todayPayments.reduce((sum, p) => sum + p.amount, 0),
-      todayCount: todayPayments.length,
-      pendingAmount: pendingPayments.reduce((sum, p) => sum + p.amount, 0),
-      pendingCount: pendingPayments.length,
-      activeSubscriptions
-    };
-  }
-
-  getChartData() {
-    const data = [];
-    const now = new Date();
-    
-    switch (this.dateRange) {
-      case 'week':
-        // Last 7 days
-        for (let i = 6; i >= 0; i--) {
-          const date = new Date(now);
-          date.setDate(date.getDate() - i);
-          const dayRevenue = this.getRevenueForDate(date);
-          data.push({
-            label: DateHelpers.getDayName(date).substring(0, 3),
-            value: dayRevenue
-          });
-        }
-        break;
-        
-      case 'month':
-        // Last 30 days grouped by week
-        for (let i = 3; i >= 0; i--) {
-          const weekStart = new Date(now);
-          weekStart.setDate(weekStart.getDate() - (i * 7 + 6));
-          const weekEnd = new Date(now);
-          weekEnd.setDate(weekEnd.getDate() - (i * 7));
-          
-          const weekRevenue = this.getRevenueForPeriod(weekStart, weekEnd);
-          data.push({
-            label: `Sett ${4 - i}`,
-            value: weekRevenue
-          });
-        }
-        break;
-        
-      case 'year':
-        // Last 12 months
-        for (let i = 11; i >= 0; i--) {
-          const date = new Date(now);
-          date.setMonth(date.getMonth() - i);
-          const monthRevenue = this.getRevenueForMonth(date);
-          data.push({
-            label: DateHelpers.getMonthName(date).substring(0, 3),
-            value: monthRevenue
-          });
-        }
-        break;
-    }
-    
-    return data;
-  }
-
-  getRevenueForDate(date) {
-    return this.payments
-      .filter(p => 
-        p.status === PAYMENT_STATUS.COMPLETED &&
-        new Date(p.date).toDateString() === date.toDateString()
-      )
-      .reduce((sum, p) => sum + p.amount, 0);
-  }
-
-  getRevenueForPeriod(startDate, endDate) {
-    return this.payments
-      .filter(p => {
-        const paymentDate = new Date(p.date);
-        return p.status === PAYMENT_STATUS.COMPLETED &&
-               paymentDate >= startDate &&
-               paymentDate <= endDate;
-      })
-      .reduce((sum, p) => sum + p.amount, 0);
-  }
-
-  getRevenueForMonth(date) {
-    const year = date.getFullYear();
-    const month = date.getMonth();
-    
-    return this.payments
-      .filter(p => {
-        const paymentDate = new Date(p.date);
-        return p.status === PAYMENT_STATUS.COMPLETED &&
-               paymentDate.getFullYear() === year &&
-               paymentDate.getMonth() === month;
-      })
-      .reduce((sum, p) => sum + p.amount, 0);
-  }
-
-  formatChartValue(value) {
-    if (value >= 1000) {
-      return `€${(value / 1000).toFixed(1)}k`;
-    }
-    return `€${value}`;
-  }
-
-  // Filters
-
-  getFilteredPayments() {
-    let filtered = [...this.payments];
-    
-    // Status filter
-    if (this.currentFilter !== 'all') {
-      filtered = filtered.filter(p => p.status === this.currentFilter);
-    }
-    
-    // Search filter
-    if (this.searchTerm) {
-      const search = this.searchTerm.toLowerCase();
-      filtered = filtered.filter(p => {
-        const student = this.students.find(s => s.id === p.studentId);
-        const studentName = student ? `${student.firstName} ${student.lastName}`.toLowerCase() : '';
-        
-        return studentName.includes(search) ||
-               p.description?.toLowerCase().includes(search) ||
-               p.amount.toString().includes(search) ||
-               p.invoice?.toLowerCase().includes(search);
-      });
-    }
-    
-    // Date filter
-    const startDate = document.getElementById('filter-start-date')?.value;
-    const endDate = document.getElementById('filter-end-date')?.value;
-    
-    if (startDate) {
-      filtered = filtered.filter(p => new Date(p.date) >= new Date(startDate));
-    }
-    
-    if (endDate) {
-      filtered = filtered.filter(p => new Date(p.date) <= new Date(endDate));
-    }
-    
-    // Sort by date (newest first)
-    filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
-    
-    return filtered;
-  }
-
-  getFilteredTotal() {
-    return this.getFilteredPayments()
-      .filter(p => p.status === PAYMENT_STATUS.COMPLETED)
-      .reduce((sum, p) => sum + p.amount, 0);
   }
 
   // Actions
-
-  handleSearch(event) {
-    this.searchTerm = event.target.value;
-    this.updateTable();
+  addPayment() {
+    this.showPaymentForm();
   }
 
-  filterPayments(filter) {
-    this.currentFilter = filter;
-    this.updateTable();
-    
-    // Update UI
-    document.querySelectorAll('.filter-btn').forEach(btn => {
-      btn.classList.remove('active');
-    });
-    event.target.classList.add('active');
-  }
-
-  applyDateFilter() {
-    this.updateTable();
-  }
-
-  changeDateRange(range) {
-    this.dateRange = range;
-    
-    // Update chart
-    const chartContainer = document.getElementById('revenue-chart');
-    if (chartContainer) {
-      chartContainer.innerHTML = this.renderRevenueChart();
-    }
-    
-    // Update buttons
-    document.querySelectorAll('.chart-btn').forEach(btn => {
-      btn.classList.remove('active');
-    });
-    event.target.classList.add('active');
-  }
-
-  updateTable() {
-    const tbody = document.querySelector('.table tbody');
-    if (tbody) {
-      tbody.innerHTML = this.renderPaymentsTable();
-    }
-    
-    // Update summary
-    const summaryElements = document.querySelectorAll('.payments-summary strong');
-    if (summaryElements.length >= 2) {
-      summaryElements[0].textContent = NumberHelpers.formatCurrency(this.getFilteredTotal());
-      summaryElements[1].textContent = this.getFilteredPayments().length;
+  editPayment(paymentId) {
+    const payment = this.payments.find(p => p.id === paymentId);
+    if (payment) {
+      this.showPaymentForm(payment);
     }
   }
 
-  async addManualPayment() {
-    const studentOptions = this.students
-      .filter(s => s.status === STUDENT_STATUS.ACTIVE)
-      .map(s => ({
-        value: s.id,
-        label: `${s.firstName} ${s.lastName}`
-      }));
-    
-    Modal.form({
-      title: 'Registra Pagamento Manuale',
-      size: 'medium',
-      fields: [
-        {
-          name: 'studentId',
-          label: 'Studente',
-          type: 'select',
-          options: studentOptions,
-          required: true
-        },
-        {
-          name: 'type',
-          label: 'Tipo',
-          type: 'select',
-          options: [
-            { value: 'subscription', label: 'Abbonamento' },
-            { value: 'booking', label: 'Lezione Privata' },
-            { value: 'other', label: 'Altro' }
-          ],
-          required: true
-        },
-        {
-          name: 'amount',
-          label: 'Importo (€)',
-          type: 'number',
-          min: 0,
-          step: 0.01,
-          required: true
-        },
-        {
-          name: 'method',
-          label: 'Metodo di Pagamento',
-          type: 'select',
-          options: [
-            { value: 'cash', label: 'Contanti' },
-            { value: 'credit_card', label: 'Carta di Credito' },
-            { value: 'bank_transfer', label: 'Bonifico' },
-            { value: 'other', label: 'Altro' }
-          ],
-          required: true
-        },
-        {
-          name: 'description',
-          label: 'Descrizione',
-          type: 'text',
-          required: true
-        },
-        {
-          name: 'date',
-          label: 'Data',
-          type: 'date',
-          value: new Date().toISOString().split('T')[0],
-          required: true
-        }
-      ],
-      onSubmit: (formData) => {
-        const newPayment = {
-          id: StringHelpers.generateId('payment'),
-          ...formData,
-          amount: parseFloat(formData.amount),
-          status: PAYMENT_STATUS.COMPLETED,
-          invoice: this.generateInvoiceNumber()
-        };
-        
-        this.payments.push(newPayment);
-        Storage.set(STORAGE_KEYS.PAYMENTS, this.payments);
-        
-        Toast.show('Pagamento registrato con successo', 'success');
-        this.render().then(html => {
-          document.getElementById('page-content').innerHTML = html;
-        });
-      }
+  async deletePayment(paymentId) {
+    const confirmed = await this.services.modal.confirm({
+      title: 'Elimina Pagamento',
+      message: 'Sei sicuro di voler eliminare questa transazione? Questa azione è irreversibile.',
+      confirmText: 'Elimina',
+      confirmClass: 'btn-danger'
     });
+
+    if (confirmed) {
+      this.payments = this.payments.filter(p => p.id !== paymentId);
+      Storage.set(STORAGE_KEYS.PAYMENTS, this.payments);
+      this.services.toast.show('Pagamento eliminato con successo.', 'success');
+      this.refreshPage();
+    }
   }
 
-  viewPayment(paymentId) {
+  viewReceipt(paymentId) {
     const payment = this.payments.find(p => p.id === paymentId);
     if (!payment) return;
-    
     const student = this.students.find(s => s.id === payment.studentId);
-    
+
     const content = `
-      <div class="payment-details">
-        <div class="detail-section">
-          <h4>Informazioni Pagamento</h4>
-          <div class="detail-grid">
-            <div class="detail-item">
-              <label>ID Transazione:</label>
-              <span>${payment.id}</span>
-            </div>
-            <div class="detail-item">
-              <label>Data:</label>
-              <span>${DateHelpers.formatDate(payment.date, 'datetime')}</span>
-            </div>
-            <div class="detail-item">
-              <label>Importo:</label>
-              <span class="font-medium">${NumberHelpers.formatCurrency(payment.amount)}</span>
-            </div>
-            <div class="detail-item">
-              <label>Stato:</label>
-              <span class="status-indicator status-${payment.status}">
-                ${this.getStatusLabel(payment.status)}
-              </span>
-            </div>
-          </div>
+      <div class="receipt-modal">
+        <h3>Ricevuta #${payment.id}</h3>
+        <p><strong>Data:</strong> ${DateHelpers.formatDateTime(payment.date)}</p>
+        <p><strong>Allievo:</strong> ${student ? `${student.firstName} ${student.lastName}` : 'N/D'}</p>
+        <hr>
+        <table class="receipt-table">
+          <tr>
+            <td>${payment.description}</td>
+            <td class="text-right">€ ${payment.amount.toFixed(2)}</td>
+          </tr>
+        </table>
+        <hr>
+        <div class="receipt-total">
+          <strong>TOTALE</strong>
+          <strong>€ ${payment.amount.toFixed(2)}</strong>
         </div>
-        
-        <div class="detail-section">
-          <h4>Studente</h4>
-          ${student ? `
-            <div class="student-info">
-              <div class="avatar">
-                ${StringHelpers.getInitials(student.firstName + ' ' + student.lastName)}
-              </div>
-              <div>
-                <p class="font-medium">${student.firstName} ${student.lastName}</p>
-                <p class="text-secondary">${student.email}</p>
-                <p class="text-secondary">${student.phone}</p>
-              </div>
-            </div>
-          ` : '<p class="text-secondary">Studente non trovato</p>'}
-        </div>
-        
-        <div class="detail-section">
-          <h4>Dettagli</h4>
-          <div class="detail-grid">
-            <div class="detail-item">
-              <label>Tipo:</label>
-              <span>${this.getPaymentTypeLabel(payment.type)}</span>
-            </div>
-            <div class="detail-item">
-              <label>Metodo:</label>
-              <span>${this.getPaymentMethodLabel(payment.method)}</span>
-            </div>
-            <div class="detail-item">
-              <label>Descrizione:</label>
-              <span>${payment.description || '-'}</span>
-            </div>
-            <div class="detail-item">
-              <label>Fattura:</label>
-              <span>${payment.invoice || '-'}</span>
-            </div>
-          </div>
-        </div>
+        <p class="text-center text-secondary mt-2">Grazie per il tuo pagamento!</p>
       </div>
     `;
-    
-    Modal.create({
-      title: 'Dettagli Pagamento',
+
+    this.services.modal.create({
+      title: 'Dettaglio Ricevuta',
       content: content,
-      size: 'medium',
       actions: [
-        {
-          text: 'Chiudi',
-          class: 'btn-primary',
-          onClick: () => true
-        }
+        { text: 'Stampa', class: 'btn-outline', onClick: () => this.services.toast.show('Funzione di stampa non disponibile.', 'info') },
+        { text: 'Chiudi', class: 'btn-primary', onClick: () => true }
       ]
     });
   }
 
-  async confirmPayment(paymentId) {
-    const payment = this.payments.find(p => p.id === paymentId);
-    if (!payment) return;
-    
-    payment.status = PAYMENT_STATUS.COMPLETED;
-    Storage.set(STORAGE_KEYS.PAYMENTS, this.payments);
-    
-    Toast.show('Pagamento confermato', 'success');
-    this.updateTable();
-  }
+  showPaymentForm(payment = null) {
+    const studentOptions = this.students.map(s => ({ value: s.id, label: `${s.firstName} ${s.lastName}` }));
 
-  async cancelPayment(paymentId) {
-    const confirmed = await Modal.confirm({
-      title: 'Annulla Pagamento',
-      message: 'Sei sicuro di voler annullare questo pagamento?',
-      confirmText: 'Annulla Pagamento',
-      confirmClass: 'btn-danger'
-    });
-    
-    if (confirmed) {
-      const payment = this.payments.find(p => p.id === paymentId);
-      if (payment) {
-        payment.status = PAYMENT_STATUS.FAILED;
-        Storage.set(STORAGE_KEYS.PAYMENTS, this.payments);
-        
-        Toast.show('Pagamento annullato', 'info');
-        this.updateTable();
-      }
-    }
-  }
-
-  downloadInvoice(invoiceNumber) {
-    Toast.show('Download fattura in sviluppo', 'info');
-  }
-
-  exportPayments() {
-    Modal.form({
-      title: 'Esporta Pagamenti',
+    this.services.modal.form({
+      title: payment ? 'Modifica Pagamento' : 'Aggiungi Pagamento',
+      size: 'large',
       fields: [
-        {
-          name: 'format',
-          label: 'Formato',
-          type: 'select',
-          options: [
-            { value: 'csv', label: 'CSV' },
-            { value: 'excel', label: 'Excel' },
-            { value: 'pdf', label: 'PDF Report' }
-          ],
-          required: true
-        },
-        {
-          name: 'period',
-          label: 'Periodo',
-          type: 'select',
-          options: [
-            { value: 'current', label: 'Filtri Correnti' },
-            { value: 'month', label: 'Questo Mese' },
-            { value: 'lastMonth', label: 'Mese Scorso' },
-            { value: 'year', label: 'Questo Anno' },
-            { value: 'all', label: 'Tutti' }
-          ],
-          required: true
-        }
+        { name: 'studentId', label: 'Allievo', type: 'select', options: studentOptions, value: payment?.studentId || '', required: true },
+        { name: 'amount', label: 'Importo (€)', type: 'number', step: '0.01', value: payment?.amount || '', required: true },
+        { name: 'description', label: 'Descrizione', value: payment?.description || '', required: true, placeholder: 'Es. Abbonamento Mensile Open' },
+        { name: 'date', label: 'Data Pagamento', type: 'date', value: payment ? payment.date.split('T')[0] : new Date().toISOString().split('T')[0], required: true },
+        { name: 'status', label: 'Stato', type: 'select', options: Object.values(PAYMENT_STATUS).map(s => ({ value: s, label: this.getStatusLabel(s) })), value: payment?.status || PAYMENT_STATUS.COMPLETED, required: true }
       ],
       onSubmit: (formData) => {
-        if (formData.format === 'csv') {
-          BackupService.exportCollectionAsCSV(STORAGE_KEYS.PAYMENTS, `pagamenti-${formData.period}`);
+        // Convert amount to number and date to ISO string
+        formData.amount = parseFloat(formData.amount);
+        formData.date = new Date(formData.date).toISOString();
+
+        if (payment) {
+          // Update
+          const index = this.payments.findIndex(p => p.id === payment.id);
+          this.payments[index] = { ...this.payments[index], ...formData };
+          this.services.toast.show('Pagamento aggiornato con successo.', 'success');
         } else {
-          Toast.show(`Export ${formData.format} in sviluppo`, 'info');
+          // Create
+          const newPayment = {
+            id: StringHelpers.generateId('pay'),
+            ...formData
+          };
+          this.payments.push(newPayment);
+          this.services.toast.show('Pagamento aggiunto con successo.', 'success');
         }
+        Storage.set(STORAGE_KEYS.PAYMENTS, this.payments);
+        this.refreshPage();
       }
     });
   }
 
-  // Utility methods
+  async refreshPage() {
+    // Re-render the main content
+    document.getElementById('page-content').innerHTML = await this.render();
+  }
 
-  generateInvoiceNumber() {
-    const year = new Date().getFullYear();
-    const count = this.payments.filter(p => 
-      p.invoice && p.invoice.startsWith(`INV-${year}-`)
-    ).length + 1;
+  // Helpers
+  calculateStats() {
+    const now = new Date();
+    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     
-    return `INV-${year}-${String(count).padStart(3, '0')}`;
-  }
-
-  getPaymentTypeLabel(type) {
-    const labels = {
-      'subscription': 'Abbonamento',
-      'booking': 'Lezione Privata',
-      'other': 'Altro'
+    const monthlyPayments = this.payments.filter(p => new Date(p.date) >= firstDayOfMonth && p.status === PAYMENT_STATUS.COMPLETED);
+    
+    return {
+      monthlyTotal: monthlyPayments.reduce((sum, p) => sum + p.amount, 0),
+      monthlyCount: monthlyPayments.length,
+      pending: this.payments.filter(p => p.status === PAYMENT_STATUS.PENDING).length,
     };
-    return labels[type] || type;
-  }
-
-  getPaymentMethodLabel(method) {
-    const labels = {
-      'cash': 'Contanti',
-      'credit_card': 'Carta di Credito',
-      'bank_transfer': 'Bonifico',
-      'other': 'Altro'
-    };
-    return labels[method] || method;
-  }
-
-  getPaymentMethodIcon(method) {
-    const icons = {
-      'cash': 'euro',
-      'credit_card': 'credit_card',
-      'bank_transfer': 'account_balance',
-      'other': 'payment'
-    };
-    return icons[method] || 'payment';
   }
 
   getStatusLabel(status) {
     const labels = {
-      [PAYMENT_STATUS.PENDING]: 'In Sospeso',
       [PAYMENT_STATUS.COMPLETED]: 'Completato',
-      [PAYMENT_STATUS.FAILED]: 'Fallito',
-      [PAYMENT_STATUS.REFUNDED]: 'Rimborsato'
+      [PAYMENT_STATUS.PENDING]: 'In Sospeso',
+      [PAYMENT_STATUS.REFUNDED]: 'Rimborsato',
+      [PAYMENT_STATUS.FAILED]: 'Fallito'
     };
     return labels[status] || status;
   }
 }
 
-// Create global instance
 window.adminPaymentsPage = new AdminPaymentsPage();

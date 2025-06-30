@@ -1,7 +1,8 @@
 // Demo Service - Boricua Dance Studio
 
 class DemoService {
-  constructor() {
+  constructor(services) {
+    this.toast = services.toast;
     this.initialized = false;
   }
   
@@ -775,7 +776,7 @@ class DemoService {
     this.initialized = false;
     this.initializeDemoData();
     
-    Toast.show('Dati demo ripristinati', 'success');
+    this.toast.show('Dati demo ripristinati', 'success');
   }
   
   // Generate random data for testing
@@ -841,5 +842,4 @@ class DemoService {
   }
 }
 
-// Create global instance
-window.DemoService = new DemoService();
+// No global instance

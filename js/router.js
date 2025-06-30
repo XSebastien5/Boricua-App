@@ -1,11 +1,25 @@
 // Router - Boricua Dance Studio
 
 class Router {
-  constructor() {
+  constructor(services) {
     this.routes = {};
     this.currentRoute = null;
     this.contentContainer = document.getElementById('page-content');
     this.pageTitle = document.getElementById('page-title');
+    this.services = services;
+    this.pageMap = {
+      'LoginPage': 'loginPage',
+      'AdminDashboard': 'adminDashboardPage',
+      'TeacherDashboard': 'teacherDashboardPage',
+      'StudentDashboard': 'studentDashboardPage',
+      'AdminStudents': 'adminStudentsPage',
+      'AdminCourses': 'adminCoursesPage',
+      'StudentBookings': 'studentBookingsPage',
+      'AdminTeachers': 'adminTeachersPage',
+      'AdminBookings': 'adminBookingsPage',
+      'AdminPayments': 'adminPaymentsPage',
+      'AdminSettings': 'adminSettingsPage',
+    };
     
     // Initialize routes
     this.initializeRoutes();
@@ -240,6 +254,7 @@ class Router {
   }
 
   async loadRoute(path, pushState = true) {
+    console.log(`[Router] Loading route: ${path}`);
     const route = this.routes[path];
     
     if (!route) {
@@ -258,7 +273,7 @@ class Router {
       
       // Check role permissions
       if (route.requiredRole && user.role !== route.requiredRole) {
-        Toast.show('Non hai i permessi per accedere a questa pagina', 'error');
+        this.services.toast.show('Non hai i permessi per accedere a questa pagina', 'error');
         this.navigateToRoleDashboard(user.role);
         return;
       }
@@ -286,19 +301,18 @@ class Router {
     
     try {
       // Load component
-      await this.loadComponent(route.component);
+      await this.loadComponent(route.component, this.services);
     } catch (error) {
       console.error('Error loading component:', error);
       this.showError();
     } finally {
       this.showLoading(false);
+      console.log(`[Router] Finished loading route: ${path}`);
     }
   }
 
-  async loadComponent(componentName) {
-    // Simulate loading component (in real app, would dynamically import)
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
+  async loadComponent(componentName, services) {
+    console.log(`[Router] Loading component: ${componentName}`);
     // Clear content
     if (this.contentContainer) {
       this.contentContainer.innerHTML = '';
@@ -311,28 +325,21 @@ class Router {
       this.contentContainer.innerHTML = content;
       
       // Initialize component if needed
-      this.initializeComponent(componentName);
+      this.initializeComponent(componentName, services);
       
       // Remove transition class
       setTimeout(() => {
         this.contentContainer.classList.remove('page-transition-enter');
       }, 10);
     }
+    console.log(`[Router] Finished loading component: ${componentName}`);
   }
 
   getComponentContent(componentName) {
+    console.log(`[Router] Getting content for component: ${componentName}`);
     // Check if page class exists
-    const pageMap = {
-      'LoginPage': 'loginPage',
-      'AdminDashboard': 'adminDashboardPage',
-      'TeacherDashboard': 'teacherDashboardPage', 
-      'StudentDashboard': 'studentDashboardPage',
-      'AdminStudents': 'adminStudentsPage',
-      'AdminCourses': 'adminCoursesPage',
-      'StudentBookings': 'studentBookingsPage'
-    };
-    
-    const pageInstance = window[pageMap[componentName]];
+    const pageInstanceName = this.pageMap[componentName];
+    const pageInstance = window[pageInstanceName];
     
     if (pageInstance && typeof pageInstance.render === 'function') {
       // Return promise that resolves with HTML
@@ -340,279 +347,10 @@ class Router {
     }
     
     // Fallback for components not yet implemented
-    switch (componentName) {
-      case 'LoginPage':
-        return this.getLoginPageContent();
-      
-      case 'AdminDashboard':
-        return this.getAdminDashboardContent();
-      
-      case 'TeacherDashboard':
-        return this.getTeacherDashboardContent();
-      
-      case 'StudentDashboard':
-        return this.getStudentDashboardContent();
-      
-      default:
-        return `
-          <div class="page-placeholder">
-            <h2>${componentName}</h2>
-            <p class="text-secondary">Questa pagina è in costruzione...</p>
-          </div>
-        `;
-    }
-  }
-
-  getLoginPageContent() {
     return `
-      <div class="login-page">
-        <div class="login-container">
-          <div class="login-card card">
-            <div class="login-header">
-              <img src="assets/logo.png" alt="Boricua Dance Studio" class="login-logo">
-              <h1 class="login-title">Boricua Dance Studio</h1>
-              <p class="login-subtitle">Accedi al tuo account</p>
-            </div>
-            
-            <form id="login-form" class="login-form">
-              <div class="form-group">
-                <label for="email">Email</label>
-                <input type="email" id="email" class="form-control" 
-                       placeholder="nome@esempio.com" required>
-              </div>
-              
-              <div class="form-group">
-                <label for="password">Password</label>
-                <input type="password" id="password" class="form-control" 
-                       placeholder="••••••••" required>
-              </div>
-              
-              <div class="form-group">
-                <label class="checkbox">
-                  <input type="checkbox" id="remember-me">
-                  <span>Ricordami</span>
-                </label>
-              </div>
-              
-              <button type="submit" class="btn btn-primary btn-block">
-                Accedi
-              </button>
-              
-              <div class="login-links">
-                <a href="#" id="forgot-password-link">Password dimenticata?</a>
-                <a href="#" id="register-link">Registrati</a>
-              </div>
-            </form>
-            
-            <div class="demo-users">
-              <p class="text-center text-secondary mb-2">Utenti Demo:</p>
-              <div class="demo-buttons">
-                <button class="btn btn-outline btn-sm" onclick="app.router.loginAsDemo('admin')">
-                  Admin
-                </button>
-                <button class="btn btn-outline btn-sm" onclick="app.router.loginAsDemo('teacher')">
-                  Maestro
-                </button>
-                <button class="btn btn-outline btn-sm" onclick="app.router.loginAsDemo('student')">
-                  Allievo
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
-  }
-
-  getAdminDashboardContent() {
-    const students = Storage.get(STORAGE_KEYS.STUDENTS) || [];
-    const teachers = Storage.get(STORAGE_KEYS.TEACHERS) || [];
-    const courses = Storage.get(STORAGE_KEYS.COURSES) || [];
-    const bookings = Storage.get(STORAGE_KEYS.BOOKINGS) || [];
-    
-    return `
-      <div class="dashboard-page">
-        <div class="stats-grid">
-          <div class="stat-card">
-            <div class="stat-icon primary">
-              <span class="material-icons">people</span>
-            </div>
-            <div class="stat-content">
-              <div class="stat-label">Allievi Totali</div>
-              <div class="stat-value">${students.length}</div>
-            </div>
-          </div>
-          
-          <div class="stat-card">
-            <div class="stat-icon secondary">
-              <span class="material-icons">school</span>
-            </div>
-            <div class="stat-content">
-              <div class="stat-label">Maestri</div>
-              <div class="stat-value">${teachers.length}</div>
-            </div>
-          </div>
-          
-          <div class="stat-card">
-            <div class="stat-icon success">
-              <span class="material-icons">class</span>
-            </div>
-            <div class="stat-content">
-              <div class="stat-label">Corsi Attivi</div>
-              <div class="stat-value">${courses.filter(c => c.status === COURSE_STATUS.ACTIVE).length}</div>
-            </div>
-          </div>
-          
-          <div class="stat-card">
-            <div class="stat-icon warning">
-              <span class="material-icons">event</span>
-            </div>
-            <div class="stat-content">
-              <div class="stat-label">Prenotazioni Oggi</div>
-              <div class="stat-value">${this.getTodayBookings(bookings)}</div>
-            </div>
-          </div>
-        </div>
-        
-        <div class="grid grid-cols-2 mt-3">
-          <div class="card">
-            <div class="card-header">
-              <h3 class="card-title">Attività Recenti</h3>
-            </div>
-            <div class="card-body">
-              <p class="text-secondary">Nessuna attività recente</p>
-            </div>
-          </div>
-          
-          <div class="card">
-            <div class="card-header">
-              <h3 class="card-title">Prossimi Eventi</h3>
-            </div>
-            <div class="card-body">
-              <p class="text-secondary">Nessun evento programmato</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
-  }
-
-  getTeacherDashboardContent() {
-    return `
-      <div class="dashboard-page">
-        <div class="stats-grid">
-          <div class="stat-card">
-            <div class="stat-icon primary">
-              <span class="material-icons">class</span>
-            </div>
-            <div class="stat-content">
-              <div class="stat-label">I Miei Corsi</div>
-              <div class="stat-value">3</div>
-            </div>
-          </div>
-          
-          <div class="stat-card">
-            <div class="stat-icon secondary">
-              <span class="material-icons">people</span>
-            </div>
-            <div class="stat-content">
-              <div class="stat-label">Allievi Totali</div>
-              <div class="stat-value">45</div>
-            </div>
-          </div>
-          
-          <div class="stat-card">
-            <div class="stat-icon success">
-              <span class="material-icons">event</span>
-            </div>
-            <div class="stat-content">
-              <div class="stat-label">Lezioni Oggi</div>
-              <div class="stat-value">2</div>
-            </div>
-          </div>
-          
-          <div class="stat-card">
-            <div class="stat-icon warning">
-              <span class="material-icons">schedule</span>
-            </div>
-            <div class="stat-content">
-              <div class="stat-label">Prossima Lezione</div>
-              <div class="stat-value">16:00</div>
-            </div>
-          </div>
-        </div>
-        
-        <div class="card mt-3">
-          <div class="card-header">
-            <h3 class="card-title">Il Mio Calendario</h3>
-          </div>
-          <div class="card-body">
-            <p class="text-secondary">Calendario in costruzione...</p>
-          </div>
-        </div>
-      </div>
-    `;
-  }
-
-  getStudentDashboardContent() {
-    const user = Storage.get(STORAGE_KEYS.USER);
-    const userBadges = Storage.get(STORAGE_KEYS.USER_BADGES)?.[user?.id] || [];
-    const userPoints = Storage.get(STORAGE_KEYS.USER_POINTS)?.[user?.id] || 0;
-    
-    return `
-      <div class="dashboard-page">
-        <!-- QR Code Section -->
-        <div class="card mb-3">
-          <div class="card-body text-center">
-            <h3 class="mb-2">Il Mio QR Code</h3>
-            <div class="qr-code-container" id="student-qr-code">
-              <canvas id="qr-canvas"></canvas>
-            </div>
-            <p class="text-secondary mt-2">Mostra questo codice per registrare la tua presenza</p>
-          </div>
-        </div>
-        
-        <!-- Gamification Section -->
-        <div class="card mb-3">
-          <div class="card-header">
-            <h3 class="card-title">I Miei Progressi</h3>
-          </div>
-          <div class="card-body">
-            <div class="points-display mb-3">
-              <span class="text-secondary">Punti Totali:</span>
-              <span class="points-value">${userPoints}</span>
-            </div>
-            
-            <div class="badges-grid">
-              ${userBadges.length > 0 ? userBadges.map(badge => `
-                <div class="gamification-badge ${badge.level}" title="${badge.description}">
-                  <span>${badge.icon}</span>
-                </div>
-              `).join('') : '<p class="text-secondary">Nessun badge ancora guadagnato</p>'}
-            </div>
-          </div>
-        </div>
-        
-        <!-- Quick Actions -->
-        <div class="grid grid-cols-2 gap-3">
-          <div class="card hover-lift" onclick="app.router.navigate('${ROUTES.STUDENT_COURSES}')">
-            <div class="card-body text-center">
-              <span class="material-icons" style="font-size: 48px; color: var(--color-primary);">
-                class
-              </span>
-              <h4 class="mt-2">I Miei Corsi</h4>
-            </div>
-          </div>
-          
-          <div class="card hover-lift" onclick="app.router.navigate('${ROUTES.STUDENT_BOOKINGS}')">
-            <div class="card-body text-center">
-              <span class="material-icons" style="font-size: 48px; color: var(--color-secondary);">
-                event_available
-              </span>
-              <h4 class="mt-2">Prenota Lezione</h4>
-            </div>
-          </div>
-        </div>
+      <div class="page-placeholder">
+        <h2>${componentName}</h2>
+        <p class="text-secondary">Questa pagina è in costruzione...</p>
       </div>
     `;
   }
@@ -625,119 +363,23 @@ class Router {
     ).length;
   }
 
-  initializeComponent(componentName) {
+  initializeComponent(componentName, services) {
+    const pageInstanceName = this.pageMap[componentName];
+    const pageInstance = window[pageInstanceName];
+    
+    if (pageInstance && typeof pageInstance.init === 'function') {
+      pageInstance.init(services);
+    }
+
     // Initialize component-specific functionality
-    switch (componentName) {
-      case 'LoginPage':
-        this.initializeLoginPage();
-        break;
-      
-      case 'StudentDashboard':
-        this.initializeStudentDashboard();
-        break;
-      
-      // Add other component initializations as needed
+    if (componentName === 'StudentDashboard') {
+      this.initializeStudentDashboard();
     }
   }
 
-  initializeLoginPage() {
-    const form = document.getElementById('login-form');
-    if (form) {
-      form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
-        
-        // Mock authentication
-        const authService = new AuthService();
-        const result = await authService.login(email, password);
-        
-        if (result.success) {
-          Toast.show('Login effettuato con successo!', 'success');
-          window.app.currentUser = result.user;
-          window.app.updateUIForUser();
-          window.app.routeByRole();
-        } else {
-          Toast.show(result.message || 'Credenziali non valide', 'error');
-        }
-      });
-    }
-    
-    // Register link
-    const registerLink = document.getElementById('register-link');
-    if (registerLink) {
-      registerLink.addEventListener('click', (e) => {
-        e.preventDefault();
-        this.navigate(ROUTES.REGISTER);
-      });
-    }
-    
-    // Forgot password link
-    const forgotLink = document.getElementById('forgot-password-link');
-    if (forgotLink) {
-      forgotLink.addEventListener('click', (e) => {
-        e.preventDefault();
-        this.navigate(ROUTES.FORGOT_PASSWORD);
-      });
-    }
-  }
-
-  initializeStudentDashboard() {
-    // Generate QR code
-    const canvas = document.getElementById('qr-canvas');
-    if (canvas) {
-      const user = Storage.get(STORAGE_KEYS.USER);
-      if (user) {
-        // In real app, use a QR library
-        // For now, just show a placeholder
-        const ctx = canvas.getContext('2d');
-        canvas.width = 200;
-        canvas.height = 200;
-        ctx.fillStyle = '#000';
-        ctx.fillRect(0, 0, 200, 200);
-        ctx.fillStyle = '#fff';
-        ctx.font = '14px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText(`Student ID: ${user.id}`, 100, 100);
-      }
-    }
-  }
-
-  loginAsDemo(role) {
-    const demoUsers = {
-      admin: {
-        id: 'admin_1',
-        email: 'admin@boricua.com',
-        name: 'Admin Demo',
-        role: USER_ROLES.ADMIN
-      },
-      teacher: {
-        id: 'teacher_1',
-        email: 'maestro@boricua.com',
-        name: 'Maestro Demo',
-        role: USER_ROLES.TEACHER
-      },
-      student: {
-        id: 'student_1',
-        email: 'allievo@boricua.com',
-        name: 'Allievo Demo',
-        role: USER_ROLES.STUDENT
-      }
-    };
-    
-    const user = demoUsers[role];
-    if (user) {
-      Storage.set(STORAGE_KEYS.USER, user);
-      Storage.set(STORAGE_KEYS.AUTH_TOKEN, 'demo_token_' + role);
-      
-      window.app.currentUser = user;
-      window.app.updateUIForUser();
-      window.app.routeByRole();
-      
-      Toast.show(`Accesso come ${user.name}`, 'success');
-    }
-  }
+/*
+  This is now handled in the LoginPage class
+*/
 
   updateActiveMenuItem(path) {
     // Remove all active classes
@@ -807,3 +449,4 @@ class Router {
 
 // Make Router available globally
 window.Router = Router;
+

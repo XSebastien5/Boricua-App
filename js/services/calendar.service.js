@@ -1,7 +1,8 @@
 // Calendar Service - Boricua Dance Studio
 
 class CalendarService {
-  constructor() {
+  constructor(services) {
+    this.notificationService = services.notification;
     this.currentView = CALENDAR_VIEWS.MONTH;
     this.currentDate = new Date();
     this.events = [];
@@ -408,7 +409,7 @@ class CalendarService {
     
     // Create notification
     if (status === BOOKING_STATUS.CONFIRMED) {
-      NotificationService.createInAppNotification({
+      this.notificationService.createInAppNotification({
         type: NOTIFICATION_TYPES.SUCCESS,
         title: 'Prenotazione Confermata',
         message: `La tua lezione del ${DateHelpers.formatDate(booking.date)} alle ${booking.time} è stata confermata`,
@@ -416,7 +417,7 @@ class CalendarService {
         data: { studentId: booking.studentId, bookingId: booking.id }
       });
     } else if (status === BOOKING_STATUS.CANCELLED) {
-      NotificationService.createInAppNotification({
+      this.notificationService.createInAppNotification({
         type: NOTIFICATION_TYPES.WARNING,
         title: 'Prenotazione Cancellata',
         message: `La lezione del ${DateHelpers.formatDate(booking.date)} alle ${booking.time} è stata cancellata`,
@@ -493,7 +494,7 @@ class CalendarService {
   createBookingNotification(booking) {
     const student = ArrayHelpers.findById(Storage.get(STORAGE_KEYS.STUDENTS) || [], booking.studentId);
     
-    NotificationService.createInAppNotification({
+    this.notificationService.createInAppNotification({
       type: NOTIFICATION_TYPES.INFO,
       title: 'Nuova Richiesta Prenotazione',
       message: `${student ? student.firstName + ' ' + student.lastName : 'Uno studente'} ha richiesto una lezione per ${DateHelpers.formatDate(booking.date)} alle ${booking.time}`,
@@ -601,5 +602,4 @@ class CalendarService {
   }
 }
 
-// Create global instance
-window.CalendarService = new CalendarService();
+// No global instance

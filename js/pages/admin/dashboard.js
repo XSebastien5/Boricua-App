@@ -2,6 +2,7 @@
 
 class AdminDashboardPage {
   constructor() {
+    this.services = null;
     this.stats = {};
     this.recentActivities = [];
     this.upcomingEvents = [];
@@ -31,11 +32,11 @@ class AdminDashboardPage {
             <p class="page-subtitle">Benvenuto nel pannello di controllo</p>
           </div>
           <div class="page-header-actions">
-            <button class="btn btn-outline" onclick="adminDashboardPage.generateReport()">
+            <button class="btn btn-outline" data-action="generate-report">
               <span class="material-icons">assessment</span>
               Genera Report
             </button>
-            <button class="btn btn-primary" onclick="adminDashboardPage.quickActions()">
+            <button class="btn btn-primary" data-action="quick-actions">
               <span class="material-icons">flash_on</span>
               Azioni Rapide
             </button>
@@ -103,8 +104,8 @@ class AdminDashboardPage {
             <div class="card-header">
               <h3 class="card-title">Andamento Entrate</h3>
               <div class="chart-controls">
-                <button class="chart-btn active" onclick="adminDashboardPage.updateChart('month')">Mese</button>
-                <button class="chart-btn" onclick="adminDashboardPage.updateChart('year')">Anno</button>
+                <button class="chart-btn active" data-action="update-chart" data-period="month">Mese</button>
+                <button class="chart-btn" data-action="update-chart" data-period="year">Anno</button>
               </div>
             </div>
             <div class="card-body">
@@ -416,7 +417,7 @@ class AdminDashboardPage {
     return `
       <div class="alerts-section">
         ${alerts.map(alert => `
-          <div class="alert alert-${alert.type}" onclick="(${alert.action})()">
+          <div class="alert alert-${alert.type}" data-action="alert-click" data-route="${alert.route}">
             <span class="material-icons">${alert.icon}</span>
             <span>${alert.message}</span>
             <span class="material-icons">arrow_forward</span>
@@ -484,7 +485,7 @@ class AdminDashboardPage {
                 </td>
                 <td class="font-medium">${NumberHelpers.formatCurrency(teacher.revenue)}</td>
                 <td>
-                  <button class="icon-btn" onclick="adminDashboardPage.viewTeacherDetails('${teacher.id}')">
+                  <button class="icon-btn" data-action="view-teacher-details" data-id="${teacher.id}">
                     <span class="material-icons">visibility</span>
                   </button>
                 </td>
@@ -580,11 +581,44 @@ class AdminDashboardPage {
 
   // Actions
 
-  init() {
+  init(services) {
+    this.services = services;
     // Draw revenue chart after render
     setTimeout(() => {
       this.drawRevenueChart();
     }, 100);
+  }
+
+  addEventListeners(services) {
+    this.services = services;
+    const pageContent = document.getElementById('page-content');
+    pageContent.addEventListener('click', (event) => {
+      const action = event.target.closest('[data-action]');
+      if (!action) return;
+
+      const actionName = action.dataset.action;
+      const actionId = action.dataset.id;
+      const actionPeriod = action.dataset.period;
+      const actionRoute = action.dataset.route;
+
+      switch (actionName) {
+        case 'generate-report':
+          this.generateReport();
+          break;
+        case 'quick-actions':
+          this.quickActions();
+          break;
+        case 'update-chart':
+          this.updateChart(actionPeriod);
+          break;
+        case 'alert-click':
+          app.router.navigate(actionRoute);
+          break;
+        case 'view-teacher-details':
+          this.viewTeacherDetails(actionId);
+          break;
+      }
+    });
   }
 
   drawRevenueChart() {
@@ -660,7 +694,7 @@ class AdminDashboardPage {
   }
 
   async generateReport() {
-    const reportType = await Modal.form({
+    const reportType = await this.services.modal.form({
       title: 'Genera Report',
       fields: [
         {
@@ -716,7 +750,7 @@ class AdminDashboardPage {
       </div>
     `;
     
-    Modal.create({
+    this.services.modal.create({
       title: 'Azioni Rapide',
       content: content,
       size: 'medium'
@@ -728,5 +762,4 @@ class AdminDashboardPage {
   }
 }
 
-// Create global instance
-window.adminDashboardPage = new AdminDashboardPage();
+// No global instance

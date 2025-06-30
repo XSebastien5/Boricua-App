@@ -1,8 +1,9 @@
 // Calendar Component - Boricua Dance Studio
 
 class CalendarComponent {
-  constructor(containerId, options = {}) {
+  constructor(containerId, options = {}, services) {
     this.container = document.getElementById(containerId);
+    this.services = services;
     this.options = {
       view: options.view || CALENDAR_VIEWS.MONTH,
       date: options.date || new Date(),
@@ -19,7 +20,7 @@ class CalendarComponent {
   }
 
   async render() {
-    const calendarData = CalendarService.getCalendarView(
+    const calendarData = this.services.calendar.getCalendarView(
       this.currentView,
       this.currentDate,
       this.options.filters
@@ -189,7 +190,7 @@ class CalendarComponent {
   }
 
   renderWeekView() {
-    const weekStart = CalendarService.getWeekStart(this.currentDate);
+    const weekStart = this.services.calendar.getWeekStart(this.currentDate);
     const weekDays = [];
     const timeSlots = [];
     
@@ -344,8 +345,8 @@ class CalendarComponent {
       case CALENDAR_VIEWS.MONTH:
         return `${DateHelpers.getMonthName(this.currentDate)} ${this.currentDate.getFullYear()}`;
       case CALENDAR_VIEWS.WEEK:
-        const weekStart = CalendarService.getWeekStart(this.currentDate);
-        const weekEnd = CalendarService.getWeekEnd(this.currentDate);
+        const weekStart = this.services.calendar.getWeekStart(this.currentDate);
+        const weekEnd = this.services.calendar.getWeekEnd(this.currentDate);
         return `${DateHelpers.formatDate(weekStart)} - ${DateHelpers.formatDate(weekEnd)}`;
       case CALENDAR_VIEWS.DAY:
         return DateHelpers.formatDate(this.currentDate, 'long');
@@ -452,7 +453,7 @@ class CalendarComponent {
       </div>
     `;
     
-    Modal.create({
+    this.services.modal.create({
       title: 'Dettagli Evento',
       content: content,
       actions: [
@@ -533,5 +534,4 @@ class CalendarComponent {
   }
 }
 
-// Create global instance if needed
-window.CalendarComponent = CalendarComponent;
+// No global instance

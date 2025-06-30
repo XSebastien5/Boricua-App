@@ -1,7 +1,10 @@
 // QR Service - Boricua Dance Studio
 
 class QRService {
-  constructor() {
+  constructor(services) {
+    this.toast = services.toast;
+    this.modal = services.modal;
+    this.gamificationService = services.gamification;
     this.scanner = null;
     this.isScanning = false;
   }
@@ -303,10 +306,10 @@ class QRService {
       Storage.set(STORAGE_KEYS.ATTENDANCE, attendance);
       
       // Award attendance points
-      GamificationService.awardAttendancePoints(scanResult.studentId);
+      this.gamificationService.awardAttendancePoints(scanResult.studentId);
       
       // Check for badges
-      GamificationService.checkBadges(scanResult.studentId);
+      this.gamificationService.checkBadges(scanResult.studentId);
       
       return {
         success: true,
@@ -381,7 +384,7 @@ class QRService {
       </div>
     `;
     
-    const modal = Modal.create({
+    const modal = this.modal.create({
       title: options.title || 'Scansiona QR Code',
       content: content,
       size: 'medium',
@@ -396,17 +399,17 @@ class QRService {
             if (options.onScan) {
               options.onScan(scanResult);
             }
-            Modal.close();
+            this.modal.close();
           },
           (error) => {
             // Error callback
-            Toast.show(error, 'error');
+            this.toast.show(error, 'error');
           }
         );
         
         if (!result.success) {
-          Toast.show(result.error, 'error');
-          Modal.close();
+          this.toast.show(result.error, 'error');
+          this.modal.close();
         }
       },
       onClose: () => {
@@ -508,5 +511,4 @@ class QRService {
   }
 }
 
-// Create global instance
-window.QRService = new QRService();
+// No global instance

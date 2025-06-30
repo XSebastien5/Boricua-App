@@ -1,7 +1,8 @@
 // Sidebar Component - Boricua Dance Studio
 
 class SidebarComponent {
-  constructor() {
+  constructor(app) {
+    this.app = app;
     this.sidebar = document.getElementById('sidebar');
     this.overlay = document.getElementById('sidebar-overlay');
     this.nav = document.getElementById('sidebar-nav');
@@ -85,8 +86,8 @@ class SidebarComponent {
       item.addEventListener('click', (e) => {
         e.preventDefault();
         const route = item.getAttribute('href');
-        if (route && window.app?.router) {
-          window.app.router.navigate(route);
+        if (route && this.app?.router) {
+          this.app.router.navigate(route);
           // Close sidebar on mobile
           if (window.innerWidth < 768) {
             this.close();
@@ -102,7 +103,7 @@ class SidebarComponent {
     a.href = item.route;
     
     // Check if active
-    if (window.app?.router?.currentRoute === item.route) {
+    if (this.app?.router?.currentRoute === item.route) {
       a.classList.add('active');
     }
     
@@ -241,5 +242,4 @@ class SidebarComponent {
   }
 }
 
-// Create global instance
-window.Sidebar = new SidebarComponent();
+// No global instance

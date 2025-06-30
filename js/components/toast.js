@@ -249,5 +249,4 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
-// Create global instance
-window.Toast = new ToastComponent();
+// The ToastComponent is now instantiated in the main app controller.
